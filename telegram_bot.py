@@ -11,6 +11,8 @@ load_dotenv()
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 TELEGRAM_ID = os.environ['TELEGRAM_ID']
 REDIS_URL = os.environ['REDIS_URL']
+REDIS_PORT = os.environ['REDIS_PORT']
+REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
 
 logger = logging.getLogger('telegram_logger')
 
@@ -34,20 +36,31 @@ def send_buttons(bot, chat_id):
 
 def send_question(bot, update, chat_id, redis_base):
     filename = "questions/1vs1200.txt"
-    text = get_random_question_and_answer(get_questions_and_answers_from_file(filename))['Вопрос']
-    redis_base.set(chat_id, text)
-    update.message.reply_text(text)
+    question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(filename)).values()
+    print(answer)
+    redis_base.set(chat_id, question)
+    redis_base.set(question, answer)
+    update.message.reply_text(question)
 
 
 def reply(bot, update):
-    redis_base = redis.Redis(host=REDIS_URL, port=6379, db=0)
-    text = ''
+    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
+                             charset="utf-8", decode_responses=True)
+    # text = ''
     chat_id = update.message.chat_id
+    question = redis_base.get(chat_id)
+    if question:
+        answer = redis_base.get(question)
     if update.message.text == 'Новый вопрос':
         send_question(bot, update, chat_id, redis_base)
-    else:
+    elif update.message.text == answer:
+        text = "Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»"
+    elif not question:
         send_buttons(bot, chat_id)
-    # update.message.reply_text(text)
+    else:
+        # send_buttons(bot, chat_id)
+        text = "Неправильно... Попробуешь ещё раз?"
+    update.message.reply_text(text)
 
 
 def log_error(bot, update, error):
