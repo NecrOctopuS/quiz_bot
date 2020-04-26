@@ -1,7 +1,7 @@
 ### Quiz bot
 
 It is quiz bot for [Telegram](https://telegram.org/) and [VK](https://vk.com/).
-
+Example on [@sha_support_bot](https://t.me/sha_support_bot)
  
 ### How to install
 
