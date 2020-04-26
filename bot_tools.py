@@ -33,6 +33,10 @@ def get_questions_and_answers_from_file(filename):
     return questions_and_answers
 
 
+def shorten_answer(answer):
+    return re.sub(r'(\(|\.).*', '', answer).strip()
+
+
 def get_random_question_and_answer(questions_and_answers):
     random_index = random.randint(0, len(questions_and_answers))
     return questions_and_answers[random_index]
