@@ -18,6 +18,9 @@ VK_TOKEN='7fe50745b17ebda65a722b03b884419409747760d218b360b4e11fdd83c6b32b3fca86
 REDIS_URL='redis-14376.c114.us-east-1-4.ec2.cloud.redislabs.com'
 REDIS_PORT='14376'
 REDIS_PASSWORD='N7UTfIcBNg11231231JaDvPCCLcIIn7g5vFECav'
+FILENAME='1vs1200.txt'
+TG_PREFIX='tg-'
+VK_PREFIX='vk-'
 ```
 
 `TELEGRAM_TOKEN` can be taken from [BotFather](https://telegram.me/BotFather) by type `/start`
@@ -30,6 +33,8 @@ REDIS_PASSWORD='N7UTfIcBNg11231231JaDvPCCLcIIn7g5vFECav'
 `REDIS_URL`, `REDIS_PORT`, `REDIS_PASSWORD` can be taken from [Redis](https://redislabs.com/).
 
 `FILENAME` it is yours filename for question and answers, that you wont to use.
+
+`TG_PREFIX` and `VK_PREFIX` it is prefix for using in database.
 
 After that in Resources you need turn on bot.
 
