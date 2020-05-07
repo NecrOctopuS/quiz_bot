@@ -15,6 +15,7 @@ REDIS_URL = os.environ['REDIS_URL']
 REDIS_PORT = os.environ['REDIS_PORT']
 REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
 FILENAME = os.environ['FILENAME']
+PREFIX = os.environ['TG_PREFIX']
 
 logger = logging.getLogger('telegram_logger')
 CHOOSING, ANSWER = range(2)
@@ -36,7 +37,7 @@ def handle_new_question_request(bot, update):
                              charset="utf-8", decode_responses=True)
     chat_id = update.message.chat_id
     question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(FILENAME)).values()
-    redis_base.set(chat_id, question)
+    redis_base.set(f'{PREFIX}{chat_id}', question)
     redis_base.set(question, answer)
     update.message.reply_text(question)
 
@@ -47,7 +48,7 @@ def handle_solution_attempt(bot, update):
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
     chat_id = update.message.chat_id
-    question = redis_base.get(chat_id)
+    question = redis_base.get(f'{PREFIX}{chat_id}')
     answer = redis_base.get(question)
     if shorten_answer(answer) in update.message.text:
         text = "Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»"
