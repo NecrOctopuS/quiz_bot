@@ -17,6 +17,7 @@ TELEGRAM_ID = os.environ['TELEGRAM_ID']
 REDIS_URL = os.environ['REDIS_URL']
 REDIS_PORT = os.environ['REDIS_PORT']
 REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
+FILENAME = os.environ['FILENAME']
 
 logger = logging.getLogger('telegram_logger')
 
@@ -38,8 +39,7 @@ def handle_new_question_request(event, vk_api):
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
     chat_id = event.user_id
-    filename = "questions/1vs1200.txt"
-    question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(filename)).values()
+    question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(FILENAME)).values()
     redis_base.set(chat_id, question)
     redis_base.set(question, answer)
     vk_api.messages.send(
