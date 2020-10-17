@@ -37,8 +37,7 @@ def handle_new_question_request(bot, update):
                              charset="utf-8", decode_responses=True)
     chat_id = f'{PREFIX}{update.message.chat_id}'
     question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(FILENAME)).values()
-    redis_base.set(chat_id, question)
-    redis_base.set(question, answer)
+    redis_base.hset(chat_id, question, answer)
     update.message.reply_text(question)
 
     return ANSWER
@@ -48,8 +47,7 @@ def handle_solution_attempt(bot, update):
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
     chat_id = f'{PREFIX}{update.message.chat_id}'
-    question = redis_base.get(chat_id)
-    answer = redis_base.get(question)
+    _, answer = redis_base.hgetall(chat_id)
     if shorten_answer(answer) in update.message.text:
         text = "Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»"
         update.message.reply_text(text)
@@ -63,8 +61,7 @@ def handle_give_up(bot, update):
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
     chat_id = f'{PREFIX}{update.message.chat_id}'
-    question = redis_base.get(chat_id)
-    answer = redis_base.get(question)
+    _, answer = redis_base.hgetall(chat_id)
     update.message.reply_text(f'Правильный ответ:{answer}')
     handle_new_question_request(bot, update)
 
