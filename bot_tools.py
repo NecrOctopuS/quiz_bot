@@ -1,6 +1,16 @@
 import logging
+import os
 import re
 import random
+
+import redis
+from dotenv import load_dotenv
+
+load_dotenv()
+REDIS_URL = os.environ['REDIS_URL']
+REDIS_PORT = os.environ['REDIS_PORT']
+REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
+FILENAME = os.environ['FILENAME']
 
 
 class TelegramLogsHandler(logging.Handler):
@@ -40,3 +50,20 @@ def shorten_answer(answer):
 def get_random_question_and_answer(questions_and_answers):
     random_index = random.randint(0, len(questions_and_answers))
     return questions_and_answers[random_index]
+
+
+def get_question_for_new_request(chat_id):
+    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
+                             charset="utf-8", decode_responses=True)
+    question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(FILENAME)).values()
+    redis_base.hset(chat_id, question, answer)
+    redis_base.close()
+    return question
+
+
+def get_answer_for_last_question(chat_id):
+    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
+                             charset="utf-8", decode_responses=True)
+    answer = list(redis_base.hgetall(chat_id).values())[0]
+    redis_base.close()
+    return answer

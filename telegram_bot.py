@@ -4,17 +4,11 @@ from dotenv import load_dotenv
 import logging
 import os
 import telegram
-import redis
-from bot_tools import TelegramLogsHandler, get_random_question_and_answer, \
-    get_questions_and_answers_from_file, shorten_answer
+from bot_tools import TelegramLogsHandler, shorten_answer, get_answer_for_last_question, get_question_for_new_request
 
 load_dotenv()
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 TELEGRAM_ID = os.environ['TELEGRAM_ID']
-REDIS_URL = os.environ['REDIS_URL']
-REDIS_PORT = os.environ['REDIS_PORT']
-REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
-FILENAME = os.environ['FILENAME']
 PREFIX = os.environ.get('TG_PREFIX', 'tg-')
 
 logger = logging.getLogger('telegram_logger')
@@ -33,21 +27,15 @@ def help(bot, update):
 
 
 def handle_new_question_request(bot, update):
-    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
-                             charset="utf-8", decode_responses=True)
     chat_id = f'{PREFIX}{update.message.chat_id}'
-    question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(FILENAME)).values()
-    redis_base.hset(chat_id, question, answer)
+    question = get_question_for_new_request(chat_id)
     update.message.reply_text(question)
-
     return ANSWER
 
 
 def handle_solution_attempt(bot, update):
-    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
-                             charset="utf-8", decode_responses=True)
     chat_id = f'{PREFIX}{update.message.chat_id}'
-    _, answer = redis_base.hgetall(chat_id)
+    answer = get_answer_for_last_question(chat_id)
     if shorten_answer(answer) in update.message.text:
         text = "Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»"
         update.message.reply_text(text)
@@ -58,10 +46,8 @@ def handle_solution_attempt(bot, update):
 
 
 def handle_give_up(bot, update):
-    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
-                             charset="utf-8", decode_responses=True)
     chat_id = f'{PREFIX}{update.message.chat_id}'
-    _, answer = redis_base.hgetall(chat_id)
+    answer = get_answer_for_last_question(chat_id)
     update.message.reply_text(f'Правильный ответ:{answer}')
     handle_new_question_request(bot, update)
 
