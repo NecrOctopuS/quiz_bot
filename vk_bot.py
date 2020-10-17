@@ -18,7 +18,7 @@ REDIS_URL = os.environ['REDIS_URL']
 REDIS_PORT = os.environ['REDIS_PORT']
 REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
 FILENAME = os.environ['FILENAME']
-PREFIX = os.environ['VK_PREFIX']
+PREFIX = os.environ.get('VK_PREFIX', 'vk-')
 logger = logging.getLogger('telegram_logger')
 
 
@@ -38,9 +38,9 @@ def send_keyboard(event, vk_api):
 def handle_new_question_request(event, vk_api):
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
-    chat_id = event.user_id
+    chat_id = f'{PREFIX}{event.user_id}'
     question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(FILENAME)).values()
-    redis_base.set(f'{PREFIX}{chat_id}', question)
+    redis_base.set(chat_id, question)
     redis_base.set(question, answer)
     vk_api.messages.send(
         user_id=event.user_id,
@@ -51,7 +51,7 @@ def handle_new_question_request(event, vk_api):
 def handle_give_up(event, vk_api):
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
-    chat_id = event.user_id
+    chat_id = f'{PREFIX}{event.user_id}'
     question = redis_base.get(chat_id)
     answer = redis_base.get(question)
     vk_api.messages.send(
@@ -64,8 +64,8 @@ def handle_give_up(event, vk_api):
 def handle_solution_attempt(event, vk_api):
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
-    chat_id = event.user_id
-    question = redis_base.get(f'{PREFIX}{chat_id}')
+    chat_id = f'{PREFIX}{event.user_id}'
+    question = redis_base.get(chat_id)
     answer = redis_base.get(question)
     if shorten_answer(answer) in event.text:
         text = "Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»"
