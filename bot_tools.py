@@ -25,11 +25,14 @@ class TelegramLogsHandler(logging.Handler):
         self.tg_bot.send_message(chat_id=self.chat_id, text=log_entry)
 
 
-def get_questions_and_answers_from_file(filename):
+def get_texts_from_file(filename):
     with open(filename, "r", encoding='KOI8-R') as my_file:
         file_contents = my_file.read()
 
-    texts = file_contents.split('\n\n')
+    return file_contents.split('\n\n')
+
+
+def get_questions_and_answers_from_texts(texts):
     questions_and_answers = []
     for text in texts:
         if 'Вопрос' in text:
@@ -41,6 +44,11 @@ def get_questions_and_answers_from_file(filename):
                 'Ответ': answer,
             })
     return questions_and_answers
+
+
+def get_questions_and_answers_from_file(filename):
+    texts = get_texts_from_file(filename)
+    return get_questions_and_answers_from_texts(texts)
 
 
 def shorten_answer(answer):
