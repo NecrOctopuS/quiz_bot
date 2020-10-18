@@ -51,7 +51,7 @@ def handle_give_up(event, vk_api, connection):
         user_id=event.user_id,
         random_id=get_random_id(),
         message=f'Правильный ответ:{answer}')
-    handle_new_question_request(event, vk_api)
+    handle_new_question_request(event, vk_api, connection)
 
 
 def handle_solution_attempt(event, vk_api, connection):
