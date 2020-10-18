@@ -1,9 +1,11 @@
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler
-from dotenv import load_dotenv
 import logging
 import os
+
 import telegram
+from dotenv import load_dotenv
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, RegexHandler, ConversationHandler
+
 from bot_tools import TelegramLogsHandler, shorten_answer, get_answer_for_last_question, get_question_for_new_request
 
 load_dotenv()

@@ -1,24 +1,24 @@
-import vk_api
-from vk_api.longpoll import VkLongPoll, VkEventType
-from dotenv import load_dotenv
-import os
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
-from vk_api.utils import get_random_id
-import redis
 import logging
+import os
+
+import redis
 import telegram
-from bot_tools import TelegramLogsHandler, get_random_question_and_answer, \
-    get_questions_and_answers_from_file, shorten_answer
+import vk_api
+from dotenv import load_dotenv
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+from vk_api.longpoll import VkLongPoll, VkEventType
+from vk_api.utils import get_random_id
+
+from bot_tools import TelegramLogsHandler, shorten_answer, get_question_for_new_request, get_answer_for_last_question
 
 load_dotenv()
 VK_TOKEN = os.environ['VK_TOKEN']
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 TELEGRAM_ID = os.environ['TELEGRAM_ID']
+PREFIX = os.environ.get('VK_PREFIX', 'vk-')
 REDIS_URL = os.environ['REDIS_URL']
 REDIS_PORT = os.environ['REDIS_PORT']
 REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
-FILENAME = os.environ['FILENAME']
-PREFIX = os.environ.get('VK_PREFIX', 'vk-')
 logger = logging.getLogger('telegram_logger')
 
 
@@ -35,25 +35,18 @@ def send_keyboard(event, vk_api):
     )
 
 
-def handle_new_question_request(event, vk_api):
-    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
-                             charset="utf-8", decode_responses=True)
+def handle_new_question_request(event, vk_api, connection):
     chat_id = f'{PREFIX}{event.user_id}'
-    question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(FILENAME)).values()
-    redis_base.set(chat_id, question)
-    redis_base.set(question, answer)
+    question = get_question_for_new_request(chat_id, connection)
     vk_api.messages.send(
         user_id=event.user_id,
         random_id=get_random_id(),
         message=question)
 
 
-def handle_give_up(event, vk_api):
-    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
-                             charset="utf-8", decode_responses=True)
+def handle_give_up(event, vk_api, connection):
     chat_id = f'{PREFIX}{event.user_id}'
-    question = redis_base.get(chat_id)
-    answer = redis_base.get(question)
+    answer = get_answer_for_last_question(chat_id, connection)
     vk_api.messages.send(
         user_id=event.user_id,
         random_id=get_random_id(),
@@ -61,12 +54,9 @@ def handle_give_up(event, vk_api):
     handle_new_question_request(event, vk_api)
 
 
-def handle_solution_attempt(event, vk_api):
-    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
-                             charset="utf-8", decode_responses=True)
+def handle_solution_attempt(event, vk_api, connection):
     chat_id = f'{PREFIX}{event.user_id}'
-    question = redis_base.get(chat_id)
-    answer = redis_base.get(question)
+    answer = get_answer_for_last_question(chat_id, connection)
     if shorten_answer(answer) in event.text:
         text = "Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»"
     else:
@@ -83,16 +73,18 @@ if __name__ == "__main__":
     tg_bot = telegram.Bot(token=TELEGRAM_TOKEN)
     logger.setLevel(logging.WARNING)
     logger.addHandler(TelegramLogsHandler(tg_bot, TELEGRAM_ID))
+    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
+                             charset="utf-8", decode_responses=True)
     longpoll = VkLongPoll(vk_session)
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.text == 'start':
                 send_keyboard(event, vk_api)
             elif event.text == "Сдаться":
-                handle_give_up(event, vk_api)
+                handle_give_up(event, vk_api, redis_base)
             elif event.text == "Новый вопрос":
-                handle_new_question_request(event, vk_api)
+                handle_new_question_request(event, vk_api, redis_base)
             else:
-                handle_solution_attempt(event, vk_api)
+                handle_solution_attempt(event, vk_api, redis_base)
 
 
