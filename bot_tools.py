@@ -55,28 +55,23 @@ def shorten_answer(answer):
     return re.sub(r'(\(|\.).*', '', answer).strip()
 
 
-def get_random_question_and_answer(questions_and_answers):
-    random_index = random.randint(0, len(questions_and_answers))
-    return questions_and_answers[random_index]
-
-
 def get_question_for_new_request(chat_id, connection=None):
-    question, answer = get_random_question_and_answer(get_questions_and_answers_from_file(FILENAME)).values()
+    question, answer = random.choice(get_questions_and_answers_from_file(FILENAME)).values()
     if connection:
-        connection.hset(chat_id, question, answer)
+        connection.hset(chat_id, 'answer', answer)
         return question
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
-    redis_base.hset(chat_id, question, answer)
+    redis_base.hset(chat_id, 'answer', answer)
     redis_base.close()
     return question
 
 
 def get_answer_for_last_question(chat_id, connection=None):
     if connection:
-        return list(connection.hgetall(chat_id).values())[0]
+        return connection.hget(chat_id, 'answer')
     redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
                              charset="utf-8", decode_responses=True)
-    answer = list(redis_base.hgetall(chat_id).values())[0]
+    answer = connection.hget(chat_id, 'answer')
     redis_base.close()
     return answer
