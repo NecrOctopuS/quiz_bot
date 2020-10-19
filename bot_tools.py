@@ -3,13 +3,11 @@ import os
 import re
 import random
 
-import redis
+
 from dotenv import load_dotenv
 
 load_dotenv()
-REDIS_URL = os.environ['REDIS_URL']
-REDIS_PORT = os.environ['REDIS_PORT']
-REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
+
 FILENAME = os.environ['FILENAME']
 
 
@@ -55,23 +53,11 @@ def shorten_answer(answer):
     return re.sub(r'(\(|\.).*', '', answer).strip()
 
 
-def get_question_for_new_request(chat_id, connection=None):
+def get_question_for_new_request(chat_id, connection):
     question, answer = random.choice(get_questions_and_answers_from_file(FILENAME)).values()
-    if connection:
-        connection.hset(chat_id, 'answer', answer)
-        return question
-    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
-                             charset="utf-8", decode_responses=True)
-    redis_base.hset(chat_id, 'answer', answer)
-    redis_base.close()
+    connection.hset(chat_id, 'answer', answer)
     return question
 
 
-def get_answer_for_last_question(chat_id, connection=None):
-    if connection:
-        return connection.hget(chat_id, 'answer')
-    redis_base = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
-                             charset="utf-8", decode_responses=True)
-    answer = connection.hget(chat_id, 'answer')
-    redis_base.close()
-    return answer
+def get_answer_for_last_question(chat_id, connection):
+    return connection.hget(chat_id, 'answer')

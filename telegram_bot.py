@@ -1,6 +1,7 @@
 import logging
 import os
 
+import redis
 import telegram
 from dotenv import load_dotenv
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
@@ -12,9 +13,13 @@ load_dotenv()
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 TELEGRAM_ID = os.environ['TELEGRAM_ID']
 PREFIX = os.environ.get('TG_PREFIX', 'tg-')
-
+REDIS_URL = os.environ['REDIS_URL']
+REDIS_PORT = os.environ['REDIS_PORT']
+REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
 logger = logging.getLogger('telegram_logger')
 CHOOSING, ANSWER = range(2)
+REDIS_BASE = redis.Redis(host=REDIS_URL, port=REDIS_PORT, password=REDIS_PASSWORD,
+                             charset="utf-8", decode_responses=True)
 
 
 def start(bot, update):
@@ -30,14 +35,14 @@ def help(bot, update):
 
 def handle_new_question_request(bot, update):
     chat_id = f'{PREFIX}{update.message.chat_id}'
-    question = get_question_for_new_request(chat_id)
+    question = get_question_for_new_request(chat_id, REDIS_BASE)
     update.message.reply_text(question)
     return ANSWER
 
 
 def handle_solution_attempt(bot, update):
     chat_id = f'{PREFIX}{update.message.chat_id}'
-    answer = get_answer_for_last_question(chat_id)
+    answer = get_answer_for_last_question(chat_id, REDIS_BASE)
     if shorten_answer(answer) in update.message.text:
         text = "Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»"
         update.message.reply_text(text)
@@ -49,7 +54,7 @@ def handle_solution_attempt(bot, update):
 
 def handle_give_up(bot, update):
     chat_id = f'{PREFIX}{update.message.chat_id}'
-    answer = get_answer_for_last_question(chat_id)
+    answer = get_answer_for_last_question(chat_id, REDIS_BASE)
     update.message.reply_text(f'Правильный ответ:{answer}')
     handle_new_question_request(bot, update)
 
